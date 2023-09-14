@@ -2,8 +2,11 @@ use ruler::{enumo::Scheduler, *};
 use std::ops::*;
 #[path = "./recipes/bool.rs"]
 pub mod bool;
+use serde::{Deserialize, Serialize};
+
 
 egg::define_language! {
+    #[derive(Serialize, Deserialize)]
   pub enum Bool {
     "~" = Not(Id),
     "&" = And([Id; 2]),
@@ -85,6 +88,8 @@ impl SynthLanguage for Bool {
         let consts = vec![Some(true), Some(false)];
         let cvecs = self_product(&consts, vars.len());
 
+        println!("varssss {:?}", vars);
+
         egraph.analysis.cvec_len = cvecs[0].len();
 
         for (i, v) in vars.iter().enumerate() {
@@ -141,6 +146,7 @@ mod test {
     fn dsl() {
         let mut all_rules: Ruleset<Bool> = Ruleset::default();
         let atoms3 = iter_bool(3);
+        println!("VARS: {:?}", atoms3);
         assert_eq!(atoms3.force().len(), 93);
 
         let scheduler = Scheduler::Compress(Limits::synthesis());
