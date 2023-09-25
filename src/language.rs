@@ -150,7 +150,7 @@ impl<L: SynthLanguage> Analysis<L> for SynthAnalysis {
 pub type CVec<L> = Vec<Option<<L as SynthLanguage>::Constant>>;
 pub type Constant<L> = <L as SynthLanguage>::Constant;
 
-pub trait SynthLanguage: Language + Send + Sync + Display + FromOp + 'static {
+pub trait SynthLanguage: Language + Send + Sync + Display + FromOp +  'static {
     type Constant: Clone + Hash + Eq + Debug + Display + Ord;
 
     // Overrideable hook into the egraph analysis modify method

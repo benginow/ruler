@@ -54,7 +54,7 @@ pub mod test {
             rules.clone(),
             Limits::synthesis(),
             Limits::minimize(),
-            true,
+            false,
         ));
 
         let duration = start.elapsed();

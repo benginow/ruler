@@ -2,7 +2,9 @@ use egg::{AstSize, EClass, Extractor, RecExpr};
 use indexmap::map::{IntoIter, Iter, IterMut, Values, ValuesMut};
 use rayon::prelude::{IntoParallelIterator, ParallelIterator};
 use std::{io::Write, sync::Arc};
-use serde::Serialize;
+use serde::{Serialize, Deserialize};
+use serde_json::{json, Value};
+
 
 use crate::{
     CVec, DeriveType, EGraph, ExtractableAstSize, HashMap, Id, IndexMap, Limits, Signature,
@@ -11,7 +13,8 @@ use crate::{
 
 use super::{Rule, Scheduler};
 
-#[derive(Clone, Debug)]
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Ruleset<L: SynthLanguage>(pub IndexMap<Arc<str>, Rule<L>>);
 
 impl<L: SynthLanguage> PartialEq for Ruleset<L> {
@@ -91,6 +94,19 @@ impl<L: SynthLanguage> Ruleset<L> {
 
     pub fn iter_mut(&mut self) -> ValuesMut<'_, Arc<str>, Rule<L>> {
         self.0.values_mut()
+    }
+
+    pub fn to_json_vec_lhs_rhs(&self) -> Vec<Value> {
+        let val = match self {
+            Ruleset(m) => m.iter().map(|(_name, val)| 
+            json!({
+                "lhs": val.lhs.to_string(),
+                "rhs": val.rhs.to_string(),
+                "bidirectional": false
+            })).collect()
+        };
+        print!("{:?}", val);
+        return val;
     }
 
     pub fn to_str_vec(&self) -> Vec<String> {
@@ -350,6 +366,10 @@ impl<L: SynthLanguage> Ruleset<L> {
     // TODO: Figure out what to do with this- it doesn't match the definition
     // of cvec matching from the paper, but it is faster.
     pub fn fast_cvec_match(egraph: &EGraph<L, SynthAnalysis>) -> Ruleset<L> {
+        println!(
+            "starting fast cvec match with {} eclasses",
+            egraph.number_of_classes()
+        );
         let mut by_cvec: IndexMap<&CVec<L>, Vec<Id>> = IndexMap::default();
 
         for class in egraph.classes() {

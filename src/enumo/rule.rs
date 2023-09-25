@@ -1,15 +1,47 @@
 use egg::{Analysis, Applier, ENodeOrVar, Language, PatternAst, Rewrite, Subst};
 use std::fmt::{Debug, Formatter};
 use std::sync::Arc;
+use serde::{Deserialize, Serialize};
 
 use crate::*;
 
-#[derive(Clone, Debug)]
+// just for convenience, we have a way to serialize rules in the same way 
+// this is a little bit clunky, but works
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(from = "SerializedEq")]
+#[serde(into = "SerializedEq")]
+#[serde(bound = "L: SynthLanguage")]
 pub struct Rule<L: SynthLanguage> {
     pub name: Arc<str>,
     pub lhs: Pattern<L>,
     pub rhs: Pattern<L>,
     pub rewrite: Rewrite<L, SynthAnalysis>,
+}
+
+#[derive(Clone, Serialize, Deserialize)]
+pub struct SerializedEq {
+    lhs: String,
+    rhs: String,
+    bidirectional: bool,
+}
+
+impl<L: SynthLanguage + 'static> From<SerializedEq> for Rule<L> {
+    fn from(ser: SerializedEq) -> Self {
+        let lhs: Pattern<L> = ser.lhs.parse().unwrap();
+        let rhs: Pattern<L> = ser.rhs.parse().unwrap();
+        Self::new(&lhs, &rhs).unwrap()
+    }
+}
+
+impl<L: SynthLanguage> From<Rule<L>> for SerializedEq {
+    fn from(eq: Rule<L>) -> Self {
+        Self {
+            lhs: eq.lhs.to_string(),
+            rhs: eq.rhs.to_string(),
+            // TODO JB: I'm not really sure how to check if the rule is bidirectional 
+            bidirectional: false,
+        }
+    }
 }
 
 impl<L: SynthLanguage> Display for Rule<L> {

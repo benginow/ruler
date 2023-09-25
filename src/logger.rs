@@ -1,5 +1,5 @@
 use std::{
-    fs::{self, OpenOptions},
+    fs::{self, OpenOptions, File},
     time::{Duration, Instant},
 };
 
@@ -13,8 +13,11 @@ use crate::{count_lines, enumo::Ruleset, DeriveType, Limits, Phase, SynthLanguag
  * parses the file into an array, adds the new JSON objec to
  * the array, and writes it back to the file
  */
-fn add_json_to_file(json: Value) {
-    let path = "nightly/data/output.json";
+fn add_json_to_file(json: Value, path: Option<&str>) {
+    let path = match path {
+        Some(p) => p,
+        None => "nightly/data/output.json"
+    };
     std::fs::create_dir_all("nightly/data").unwrap_or_else(|e| panic!("Error creating dir: {}", e));
 
     OpenOptions::new()
@@ -54,6 +57,8 @@ pub fn write_baseline<L: SynthLanguage>(
     baseline: &Ruleset<L>,
     baseline_name: &str,
     time: Duration,
+    // TODO JB: add a filepath s.t. logging can be more customizable.. tbd
+    // filepath: Option<File>
 ) {
     // Items in this list will *not* run derivability
     // Format is (a, b) where a and b are spec/baseline names
@@ -100,7 +105,7 @@ pub fn write_baseline<L: SynthLanguage>(
       })
     });
 
-    add_json_to_file(row)
+    add_json_to_file(row, None)
 }
 
 /**
@@ -156,7 +161,7 @@ pub fn write_bv_derivability<L: SynthLanguage>(
             "lhs": lhs,
             "lhs_rhs": lhsrhs
         })
-    }))
+    }), None)
 }
 
 /**
@@ -179,7 +184,7 @@ pub fn write_lifting_phase<L: SynthLanguage>(
         "phase3": format!("{}", phase3),
         "time": time.as_secs_f64(),
         "rules": rules.to_str_vec()
-    }))
+    }), None)
 }
 
 /**
@@ -203,3 +208,20 @@ fn get_derivability<L: SynthLanguage>(
         "time": elapsed.as_secs_f64()
     })
 }
+
+pub fn log_rules<L: SynthLanguage>(
+    ruleset: &Ruleset<L>,
+    filepath: Option<&str>
+) {
+
+    // for val in ruleset.to_json_vec_lhs_rhs() {
+    //     json!()
+    // }
+    // add_json_to_file(, filepath);
+    add_json_to_file(json!({
+        "num_rules": ruleset.len(),
+        "time generated": std::time::SystemTime::now(),
+        "eqs": ruleset.to_json_vec_lhs_rhs(),
+    }), filepath);
+}
+
